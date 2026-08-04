@@ -81,7 +81,9 @@ public class CagraIndexImpl implements CagraIndex {
   }
 
   private CagraIndexImpl(
-      InputStream inputStream, CuVSResources resources, CagraIndex.DeserializeDataset outDataset)
+      InputStream inputStream,
+      CuVSResources resources,
+      CagraIndex.DeserializeDataset outDataset)
       throws Throwable {
     this.resources = resources;
     this.cagraIndexReference = deserialize(inputStream, outDataset);
@@ -410,7 +412,8 @@ public class CagraIndexImpl implements CagraIndex {
   }
 
   @Override
-  public CagraIndex.PaddedDataset makePaddedDataset(CuVSMatrix dataset) throws Throwable {
+  public CagraIndex.PaddedDataset makePaddedDataset(CuVSMatrix dataset)
+      throws Throwable {
     checkNotDestroyed();
     Objects.requireNonNull(dataset);
     if (!(dataset instanceof CuVSMatrixInternal datasetInternal)) {
@@ -438,7 +441,8 @@ public class CagraIndexImpl implements CagraIndex {
   }
 
   @Override
-  public CagraIndex.PaddedDatasetView makePaddedDatasetView(CuVSMatrix dataset) throws Throwable {
+  public CagraIndex.PaddedDatasetView makePaddedDatasetView(CuVSMatrix dataset)
+      throws Throwable {
     checkNotDestroyed();
     Objects.requireNonNull(dataset);
     if (!(dataset instanceof CuVSMatrixInternal datasetInternal)) {
@@ -963,7 +967,8 @@ public class CagraIndexImpl implements CagraIndex {
                   mergedDataset,
                   mergedIndex),
               "cuvsCagraMerge");
-          return new CagraIndexImpl(new IndexReference(mergedIndex, null, datasetOwner), resources);
+          return new CagraIndexImpl(
+              new IndexReference(mergedIndex, null, datasetOwner), resources);
         } catch (Throwable e) {
           try {
             datasetOwner.close();
@@ -1000,7 +1005,8 @@ public class CagraIndexImpl implements CagraIndex {
     }
 
     @Override
-    public Builder from(InputStream inputStream, CagraIndex.DeserializeDataset outDataset) {
+    public Builder from(
+        InputStream inputStream, CagraIndex.DeserializeDataset outDataset) {
       this.inputStream = inputStream;
       this.outDataset = Objects.requireNonNull(outDataset);
       return this;
@@ -1047,7 +1053,7 @@ public class CagraIndexImpl implements CagraIndex {
       } else if (dataset != null) {
         return new CagraIndexImpl(cagraIndexParams, dataset, cuvsResources);
       } else {
-        throw new IllegalArgumentException("dataset must be provided");
+         throw new IllegalArgumentException("dataset must be provided");
       }
     }
   }
@@ -1077,7 +1083,9 @@ public class CagraIndexImpl implements CagraIndex {
     }
 
     private IndexReference(
-        MemorySegment indexMemorySegment, CuVSMatrix dataset, AutoCloseable datasetOwner) {
+        MemorySegment indexMemorySegment,
+        CuVSMatrix dataset,
+        AutoCloseable datasetOwner) {
       this.memorySegment = indexMemorySegment;
       this.dataset = dataset;
       this.datasetOwner = datasetOwner;
