@@ -563,10 +563,10 @@ jobs:
       build_type: pull-request
       matrix_name: conda-cpp-build
   rocky8-clib-standalone-build:
-    needs: rocky8-clib-standalone-build-matrix
+    needs: [rocky8-clib-standalone-build-matrix]
     runs-on: linux-${{ matrix.ARCH }}-cpu16
     env:
-      RAPIDS_ARTIFACTS_DIR: ${{ github.workspace }}/artifacts
+      RAPIDS_BUILD_TYPE: pull-request
     permissions:
       actions: read
       contents: read
@@ -577,12 +577,12 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJSON(needs.rocky8-clib-standalone-build-matrix.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+      - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -592,22 +592,14 @@ jobs:
         with:
           log-file: ${{ env.RAPIDS_ARTIFACTS_DIR }}/sccache.log
           request-timeout: 7140
-      - name: Get RAPIDS License Builder
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          repository: rapidsai/spdx-license-builder
-          ref: refs/heads/main
-          path: ./tool/
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Build and run standalone C Docker image
+      - name: Build and test standalone C tarball
         env:
           CUVS_TARBALL_CUDA_VERSION: ${{ matrix.CUDA_VER }}
           CUVS_TARBALL_PYTHON_VERSION: ${{ matrix.PY_VER }}
-          RAPIDS_AUX_SECRET_1: ${{ secrets.GIST_REPO_READ_ORG_GITHUB_TOKEN }}
-        run: ci/run_standalone_c_docker.sh --tarball-build-tests
-      - name: Upload file to GitHub Artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        run: |
+          ./build.sh tarball --tarball-build-tests
+      - name: Upload artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: libcuvs_c_${{ matrix.CUDA_VER }}_${{ matrix.ARCH }}.tar.gz
           path: libcuvs_c.tar.gz

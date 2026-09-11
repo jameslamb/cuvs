@@ -2,9 +2,10 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-# Build script for the standalone C library. Expects to be run inside an
-# environment that already provides: dnf packages (patch, tar, unzip, wget),
-# ninja, cmake (e.g. Dockerfile.standalone).
+# Build script for the standalone C library.
+#
+# Use 'Dockerfile.standalone' to build an image with all the prerequisites
+# and run this in a container.
 
 set -euo pipefail
 
@@ -21,35 +22,25 @@ fi
 source rapids-install-sccache
 source rapids-configure-sccache
 
-rapids-pip-retry install cmake
+PIP_PACKAGES=(
+  'cmake>=4.0'
+  'git+https://github.com/rapidsai/spdx-license-builder.git'
+  'ninja>=1.13'
+)
 
 RAPIDS_CUDA_MAJOR="${RAPIDS_CUDA_VERSION%%.*}"
 if [[ "${RAPIDS_CUDA_MAJOR}" == "13" ]]; then
-  rapids-pip-retry install cuda-tile "cuda-toolkit[tileiras]==${RAPIDS_CUDA_VERSION%.*}.*"
+  PIP_PACKAGES+=(
+    cuda-tile
+  )
 fi
 
+rapids-pip-retry install "${PIP_PACKAGES[@]}"
 pyenv rehash
-
-# rapids-configure-sccache enables anonymous S3 access by default. CI forwards
-# temporary AWS credentials, and sccache rejects both modes at once.
-if [[ -n "${AWS_ACCESS_KEY_ID:-}" ]]; then
-  unset SCCACHE_S3_NO_CREDENTIALS
-fi
-
-source rapids-datetime-string
-
-rapids-print-env
 
 rapids-logger "Begin cpp build"
 
 sccache --stop-server 2>/dev/null || true
-
-RAPIDS_PACKAGE_VERSION=$(rapids-generate-version)
-export RAPIDS_PACKAGE_VERSION
-
-RAPIDS_ARTIFACTS_DIR=${RAPIDS_ARTIFACTS_DIR:-"${PWD}/artifacts"}
-mkdir -p "${RAPIDS_ARTIFACTS_DIR}"
-export RAPIDS_ARTIFACTS_DIR
 
 scl enable gcc-toolset-${TOOLSET_VERSION} -- \
       cmake -S cpp -B cpp/build/ -GNinja \
@@ -96,9 +87,7 @@ if [ "${BUILD_C_LIB_TESTS}" != "OFF" ]; then
       cmake --install c/build --prefix c/build/install --component testing
 fi
 
-
 rapids-logger "Begin gathering licenses"
-rapids-pip-retry install git+https://github.com/rapidsai/spdx-license-builder.git
 license-builder . --output-json c/build/install/licenses.json --output-txt c/build/install/LICENSE
 
 rapids-logger "Begin c tarball creation"
